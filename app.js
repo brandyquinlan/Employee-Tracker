@@ -17,6 +17,10 @@ const connection = mysql.createConnection({
     database: 'employees_db'
 });
 
+const mgrList = [];
+const deptList = [];
+const roleList = [];
+
 // function which prompts the user for what action they should take
 const start = () => {
     inquirer
@@ -27,9 +31,12 @@ const start = () => {
             choices: ['View All Employees',
                 'View Al Employees by Department',
                 'View All Employees by Manager',
-                'Add Employee',
-                'Add Role',
+                'View All Departments',
+                'View All Roles',
+                'View All Managers',
                 'Add Department',
+                'Add Role',
+                'Add Employee',
                 'Remove Employee',
                 'Update Employee Role',
                 'Update Employee Manager',
@@ -43,6 +50,12 @@ const start = () => {
                 viewAllByDept();
             } else if (answer.startMenu === 'View All Employees by Manager') {
                 viewAllByMgr();
+            } else if (answer.startMenu === 'View All Departments') {
+                viewAllDepartments();
+            } else if (answer.startMenu === 'View All Roles') {
+                viewAllRoles();
+            } else if (answer.startMenu === 'View All Managers') {
+                viewAllManagers();
             } else if (answer.startMenu === 'Add Employee') {
                 addEmployee();
             } else if (answer.startMenu === 'Add Role') {
@@ -126,6 +139,40 @@ const viewAllByMgr = () => {
     );
 };
 
+const viewAllDepartments = () => {
+    let deptList = [];
+    const query = `SELECT dept_name AS 'Departments'
+    FROM department;`
+    connection.query(query, (err, results) => {
+        if (err) throw err;
+        console.table(results);
+        start();
+    });
+};
+
+const viewAllRoles = () => {
+    let roleList = [];
+    const query = `SELECT role.title AS 'Roles'
+    FROM role;`
+    connection.query(query, (err, results) => {
+        if (err) throw err;
+        console.table(results);
+        start();
+    });
+};
+
+const viewAllManagers = () => {
+    let mgrList = [];
+    const query = `SELECT DISTINCT IFNULL(CONCAT(m.first_name, ' ',m.last_name),"") AS 'Managers'
+    FROM employee
+    LEFT JOIN employee m ON (employee.manager_id = m.id);`
+    connection.query(query, (err, results) => {
+        if (err) throw err;
+        console.table(results);
+        start();
+    });
+};
+
 const addEmployee = () => {
     inquirer
         .prompt([{
@@ -168,9 +215,11 @@ const addEmployee = () => {
                 (err, result) => {
                     if (err) throw err;
                     console.log(`New Employee Added Successfully`);
+                    start();
                 });
         });
-}
+};
+
 const addRole = () => {
     inquirer
         .prompt([{
@@ -194,14 +243,15 @@ const addRole = () => {
             },
         ])
         .then((answers) => {
-            const query = `INSERT INTO role(title, salary, dept_id)VALUES(?,?,(SELECT role.dept_id FROM role WHERE role.title = ?)`
+            const query = `INSERT INTO role(title, salary, dept_id)VALUES(?,?, ?)`
             const dept = answers.dept.split(' ');
-            const dept_id = dept[1];
+            const dept_id = dept[0];
 
             connection.query(query, [answers.title, answers.salary, dept_id],
                 (err, result) => {
                     if (err) throw err;
-                    console.log(`New Employee Added Successfully`);
+                    console.log(`New Role Added Successfully`);
+                    start();
                 });
         });
 }
