@@ -20,6 +20,7 @@ const connection = mysql.createConnection({
 const mgrList = [];
 const deptList = [];
 const roleList = [];
+const employeeList = [];
 
 // function which prompts the user for what action they should take
 const start = () => {
@@ -212,7 +213,7 @@ const addEmployee = () => {
             const manager_id = manager[1];
 
             connection.query(query, [answers.first_name, answers.last_name, answers.role, manager_id],
-                (err, result) => {
+                (err, results) => {
                     if (err) throw err;
                     console.log(`New Employee Added Successfully`);
                     start();
@@ -248,13 +249,71 @@ const addRole = () => {
             const dept_id = dept[0];
 
             connection.query(query, [answers.title, answers.salary, dept_id],
-                (err, result) => {
+                (err, results) => {
                     if (err) throw err;
                     console.log(`New Role Added Successfully`);
                     start();
                 });
         });
-}
+};
+
+const addDepartment = () => {
+    inquirer
+        .prompt([{
+            name: 'dept',
+            type: 'input',
+            message: 'What is the name of the department you would like to add?',
+        }, ])
+        .then((answers) => {
+            const query = `INSERT INTO department(dept_name)VALUES(?)`
+
+            connection.query(query, [answers.dept],
+                (err, results) => {
+                    // if (err)
+                    //     return (err);
+
+                    // if (results.length != 0)
+                    //     console.log(`${answers.dept} Already Exists`);
+                    // if (err) throw err;
+                    console.log(`New Department Added Successfully`);
+                    start();
+                });
+        });
+};
+
+const removeEmployee = () => {
+    let query = `SELECT * FROM employee`;
+
+    connection.query(query, (err, results) => {
+        if (err) throw err;
+        // console.log(results.length);
+        let employeeList = [];
+        // results.forEach(result) => {
+        //     employeeList.push(`${results[i].first_name} ${results[i].last_name}`);
+        // };
+        for (let i = 0; i < results.length; i++) {
+            employeeList.push(`${results[i].first_name} ${results[i].last_name}`)
+        };
+        // console.log(employeeList);
+        inquirer
+            .prompt([{
+                name: 'choice',
+                type: 'list',
+                message: 'What is the name of the employee you would like to remove?',
+                choices: employeeList
+            }, ])
+            .then((answers) => {
+                let removeEmployee = answers.choice.split(' ');
+                let query2 = `DELETE FROM employee where first_name = "${removeEmployee[0]}" AND last_name = "${removeEmployee[1]}"`;
+                connection.query(query2, (err, results) => {
+                    if (err) throw err;
+                    console.log(`Employee Removed`);
+                    start();
+                });
+            });
+    });
+};
+
 
 // connect to the mysql server and sql database
 connection.connect((err) => {
