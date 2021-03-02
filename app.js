@@ -99,91 +99,55 @@ const viewAllByDept = () => {
     );
 };
 
-// const addEmployee = () => {
-//         inquirer
-//             .prompt([{
-//                     name: 'first_name',
-//                     type: 'input',
-//                     message: 'Enter employee\'s first name',
-//                 },
-//                 {
-//                     name: 'last_name',
-//                     type: 'input',
-//                     message: 'Enter employee\'s last name',
-//                 },
-//                 {
-//                     name: 'role',
-//                     type: 'list',
-//                     message: 'What is the employee\'s role?',
-//                     choices: [
-//                         'Operation Manager',
-//                         'Lead Engineer',
-//                         'Quality Analyst',
-//                         'Operation Specialist',
-//                     ],
-//                 },
-//                 {
-//                     name: 'manager',
-//                     type: 'list',
-//                     message: 'Who is the employee\'s manager?',
-//                     choices: [
-//                         'Evelyn Lathrop',
-//                         'Dennis Young',
-//                     ],
-//                 },
-//             ])
-//             .then((answers) => {
-//                 const firstName = answers.first_name;
-//                 const lastName = answers.last_name;
-//                 const role = answers.role;
-//                 const manager = answers.manager.split(' ');
-//                 const manager_id = manager[1];
+const addEmployee = () => {
+    inquirer
+        .prompt([{
+                name: 'first_name',
+                type: 'input',
+                message: 'Enter employee\'s first name',
+            },
+            {
+                name: 'last_name',
+                type: 'input',
+                message: 'Enter employee\'s last name',
+            },
+            {
+                name: 'role',
+                type: 'list',
+                message: 'What is the employee\'s role?',
+                choices: [
+                    'Operation Manager',
+                    'Lead Engineer',
+                    'Quality Analyst',
+                    'Operation Specialist',
+                ],
+            },
+            {
+                name: 'manager',
+                type: 'list',
+                message: 'Who is the employee\'s manager?',
+                choices: [
+                    `id 1 - Evelyn Lathrop`,
+                    'id 4 - Dennis Young',
+                ],
+            },
+        ])
+        .then((answers) => {
+            const query = `INSERT INTO employee(first_name, last_name, role_id, manager_id)VALUES(?,?,(SELECT role.id FROM role WHERE role.title = ?), ?)`
+            const manager = answers.manager.split(' ');
+            const manager_id = manager[1];
 
-//                 connection.query(`INSERT INTO employee(first_name, last_name, role_id, manager_id)VALUES(?,?,(SELECT role.id FROM role WHERE title = ?, (SELECT employee.id FROM employee WHERE last_name = ?))`, [firstName, lastName, role, manager_id],
-//                     (err, result) => {
-//                         if (err) throw err;
-//                         console.log(`New Employee Added Successfully`);
-//                     });
-//             });
-
-//     }
-
-
-
-// (SELECT role.id FROM role LEFT JOIN employee ON (employee.manager_id = employee.id)WHERE employee.manager_id = ?)
-// ,(SELECT employee.id FROM employee WHERE manager_id = managerID)
-
-// const manager = answers.
-// let role_id1 = answers.role;
-// if (answers.role === 'Operation Manager') {
-//     let role_id = 1;
-//     let manager_id = 4;
-// let role_id2 = answers.role;
-// if (role_id2 === 'Lead Engineer') role_id2 = 1;
-// let role_id3 = answers.role;
-// if (role_id3 === 'Quality Analyst') role_id3 = 1;
-// let role_id4 = answers.role;
-// if (role_id4 === 'Operations Specialist') role_id4 = 1;
-
-// console.log(role_id);
-//             connection.query('INSERT INTO employee SET ?', {
-//                     first_name: answers.first_name,
-//                     last_name: answers.last_name,
-//                     role_id: role_id,
-//                 },
-//                 (err) => {
-//                     if (err) throw err;
-//                     console.log('Employee Added Successfully');
-//                     start();
-//                 }
-//             );
-//             // };
-//         });
-// }
-
+            connection.query(query, [answers.first_name, answers.last_name, answers.role, manager_id],
+                (err, result) => {
+                    if (err) throw err;
+                    console.log(`New Employee Added Successfully`);
+                });
+        });
+}
 
 // connect to the mysql server and sql database
 connection.connect((err) => {
     if (err) throw err;
+    // run the start function after the connection is made to prompt the user
     start();
 });
