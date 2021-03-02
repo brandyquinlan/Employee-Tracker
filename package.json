@@ -1,0 +1,17 @@
+{
+    "name": "HW12_Employee_Tracker",
+    "version": "1.0.0",
+    "description": "activity for demonstrating inquirer with mysql",
+    "main": "app.js",
+    "dependencies": {
+        "asciiart": "^1.0.0",
+        "asciiart-logo": "^0.2.6",
+        "inquirer": "^6.5.2",
+        "mysql": "^2.18.1"
+    },
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "author": "",
+    "license": "ISC"
+}
