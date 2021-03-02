@@ -28,6 +28,8 @@ const start = () => {
                 'View Al Employees by Department',
                 'View All Employees by Manager',
                 'Add Employee',
+                'Add Role',
+                'Add Department',
                 'Remove Employee',
                 'Update Employee Role',
                 'Update Employee Manager',
@@ -35,7 +37,6 @@ const start = () => {
             ],
         })
         .then((answer) => {
-            // based on their answer, either call the bid or the post functions
             if (answer.startMenu === 'View All Employees') {
                 viewAllEmployees();
             } else if (answer.startMenu === 'View Al Employees by Department') {
@@ -44,6 +45,10 @@ const start = () => {
                 viewAllByMgr();
             } else if (answer.startMenu === 'Add Employee') {
                 addEmployee();
+            } else if (answer.startMenu === 'Add Role') {
+                addRole();
+            } else if (answer.startMenu === 'Add Department') {
+                addDepartment();
             } else if (answer.startMenu === 'Remove Employee') {
                 removeEmployee();
             } else if (answer.startMenu === 'Update Employee Role') {
@@ -99,6 +104,28 @@ const viewAllByDept = () => {
     );
 };
 
+const viewAllByMgr = () => {
+    console.log(logo({ name: 'ALL EMPLOYEES BY MANAGER' }).render());
+    connection.query(`SELECT employee.id AS 'ID',
+    employee.first_name AS 'First Name',
+    employee.last_name AS 'Last Name',
+    role.title AS 'Title',
+    department.dept_name AS 'Department',
+    role.salary AS 'Salary',
+    CONCAT(m.first_name, ' ',m.last_name) AS 'Manager'
+    FROM employee
+    LEFT JOIN employee m ON (employee.manager_id = m.id)
+    LEFT JOIN role ON employee.role_id = role.id
+    LEFT JOIN department ON department.id = role.dept_id
+    ORDER by manager;`,
+        function(err, results) {
+            if (err) throw err;
+            console.table(results);
+            start();
+        }
+    );
+};
+
 const addEmployee = () => {
     inquirer
         .prompt([{
@@ -138,6 +165,40 @@ const addEmployee = () => {
             const manager_id = manager[1];
 
             connection.query(query, [answers.first_name, answers.last_name, answers.role, manager_id],
+                (err, result) => {
+                    if (err) throw err;
+                    console.log(`New Employee Added Successfully`);
+                });
+        });
+}
+const addRole = () => {
+    inquirer
+        .prompt([{
+                name: 'title',
+                type: 'input',
+                message: 'What is the name of the role you would like to add?',
+            },
+            {
+                name: 'salary',
+                type: 'input',
+                message: 'What is the salary for this role?',
+            },
+            {
+                name: 'dept',
+                type: 'list',
+                message: 'Which department is the role in?',
+                choices: [
+                    '1 Operations',
+                    '2 Engineering',
+                ],
+            },
+        ])
+        .then((answers) => {
+            const query = `INSERT INTO role(title, salary, dept_id)VALUES(?,?,(SELECT role.dept_id FROM role WHERE role.title = ?)`
+            const dept = answers.dept.split(' ');
+            const dept_id = dept[1];
+
+            connection.query(query, [answers.title, answers.salary, dept_id],
                 (err, result) => {
                     if (err) throw err;
                     console.log(`New Employee Added Successfully`);
