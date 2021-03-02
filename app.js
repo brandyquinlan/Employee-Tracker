@@ -286,24 +286,19 @@ const removeEmployee = () => {
 
     connection.query(query, (err, results) => {
         if (err) throw err;
-        // console.log(results.length);
         let employeeList = [];
-        // results.forEach(result) => {
-        //     employeeList.push(`${results[i].first_name} ${results[i].last_name}`);
-        // };
         for (let i = 0; i < results.length; i++) {
             employeeList.push(`${results[i].first_name} ${results[i].last_name}`)
         };
-        // console.log(employeeList);
         inquirer
             .prompt([{
-                name: 'choice',
+                name: 'employees',
                 type: 'list',
                 message: 'What is the name of the employee you would like to remove?',
                 choices: employeeList
             }, ])
             .then((answers) => {
-                let removeEmployee = answers.choice.split(' ');
+                let removeEmployee = answers.employees.split(' ');
                 let query2 = `DELETE FROM employee where first_name = "${removeEmployee[0]}" AND last_name = "${removeEmployee[1]}"`;
                 connection.query(query2, (err, results) => {
                     if (err) throw err;
@@ -314,6 +309,62 @@ const removeEmployee = () => {
     });
 };
 
+const updateEmployeeRole = () => {
+    let query = `SELECT * FROM employee`;
+
+    connection.query(query, (err, results) => {
+        if (err) throw err;
+        let employeeList = [];
+        for (let i = 0; i < results.length; i++) {
+            employeeList.push(`${results[i].first_name} ${results[i].last_name}`)
+        };
+        console.log(`Employees: ${employeeList}`);
+
+
+        let query2 = `Select * FROM role`;
+        connection.query(query2, (err, results) => {
+            if (err) throw err;
+            let roleList = [];
+            let roleIdList = [];
+            for (let i = 0; i < results.length; i++) {
+                roleList.push(`${results[i].title}`);
+                roleIdList.push(results[i].id);
+            };
+            console.log(`Roles: ${roleList}`);
+
+            inquirer
+                .prompt([{
+                        name: 'employees',
+                        type: 'list',
+                        message: 'What is the name of the employee you would like to update?',
+                        choices: employeeList
+                    },
+                    {
+                        name: 'newRole',
+                        type: 'list',
+                        message: 'What is the name of the employee\'s new role?',
+                        choices: roleList
+
+                    },
+                ])
+                .then((answers) => {
+                    let newRoleId = '';
+                    for (let i = 0; i < roleList.length; i++) {
+                        if (roleList[i] === answers.newRole) {
+                            newRoleId = roleIdList[i];
+                        }
+                    }
+                    let updateEmployee = answers.employees.split(' ');
+                    let query3 = `UPDATE employee SET role_id = ${newRoleId} WHERE first_name = "${updateEmployee[0]}" AND last_name = "${updateEmployee[1]}"`;
+                    connection.query(query3, (err, results) => {
+                        if (err) throw err;
+                        console.log(`Employee Role Updated to ${answers.newRole}`);
+                        start();
+                    });
+                });
+        });
+    });
+};
 
 // connect to the mysql server and sql database
 connection.connect((err) => {
