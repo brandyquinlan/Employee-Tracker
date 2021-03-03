@@ -62,8 +62,8 @@ const start = () => {
                 removeEmployee();
             } else if (answer.startMenu === 'Update Employee Role') {
                 updateEmployeeRole();
-                // } else if (answer.startMenu === 'Update Employee Manager') {
-                //     updateEmployeeMgr();
+            } else if (answer.startMenu === 'Update Employee Manager') {
+                updateEmployeeMgr();
             } else if (answer.startMenu === 'Exit') {
                 connection.end();
             }
@@ -136,6 +136,7 @@ const viewAllByMgr = () => {
 };
 
 const viewAllDepartments = () => {
+    console.log(logo({ name: 'ALL Departments' }).render());
     const query = `SELECT dept_name AS 'Departments'
     FROM department;`
     connection.query(query, (err, res) => {
@@ -146,6 +147,7 @@ const viewAllDepartments = () => {
 };
 
 const viewAllRoles = () => {
+    console.log(logo({ name: 'ALL Roles' }).render());
     let roleList = [];
     const query = `SELECT role.title AS 'Roles'
     FROM role;`
@@ -157,7 +159,8 @@ const viewAllRoles = () => {
 };
 
 const viewAllManagers = () => {
-    let mgrList = [];
+    console.log(logo({ name: 'ALL Managers' }).render());
+
     const query = `SELECT DISTINCT IFNULL(CONCAT(m.first_name, ' ',m.last_name),"") AS 'Managers'
     FROM employee
     LEFT JOIN employee m ON (employee.manager_id = m.id);`
@@ -169,50 +172,57 @@ const viewAllManagers = () => {
 };
 
 const addEmployee = () => {
-    inquirer
-        .prompt([{
-                name: 'first_name',
-                type: 'input',
-                message: 'Enter employee\'s first name',
-            },
-            {
-                name: 'last_name',
-                type: 'input',
-                message: 'Enter employee\'s last name',
-            },
-            {
-                name: 'role',
-                type: 'list',
-                message: 'What is the employee\'s role?',
-                choices: [
-                    'Operation Manager',
-                    'Lead Engineer',
-                    'Quality Analyst',
-                    'Operation Specialist',
-                ],
-            },
-            {
-                name: 'manager',
-                type: 'list',
-                message: 'Who is the employee\'s manager?',
-                choices: [
-                    `id 1 - Evelyn Lathrop`,
-                    'id 4 - Dennis Young',
-                ],
-            },
-        ])
-        .then((answers) => {
-            const query = `INSERT INTO employee(first_name, last_name, role_id, manager_id)VALUES(?,?,(SELECT role.id FROM role WHERE role.title = ?), ?)`
-            const manager = answers.manager.split(' ');
-            const manager_id = manager[1];
+    let query = `Select * FROM role`;
+    connection.query(query, (err, res) => {
+        if (err) throw err;
+        let roleList = [];
+        let roleIdList = [];
+        for (let i = 0; i < res.length; i++) {
+            roleList.push(`${res[i].title}`);
+            roleIdList.push(res[i].id);
+        };
+        console.log(`Roles: ${roleList}`);
 
-            connection.query(query, [answers.first_name, answers.last_name, answers.role, manager_id],
-                (err, res) => {
-                    if (err) throw err;
-                    console.log(`\n${answers.first_name} ${answers.last_name} Added Successfully`);
-                    start();
-                });
-        });
+        inquirer
+            .prompt([{
+                    name: 'first_name',
+                    type: 'input',
+                    message: 'Enter employee\'s first name: ',
+                },
+                {
+                    name: 'last_name',
+                    type: 'input',
+                    message: 'Enter employee\'s last name: ',
+                },
+                {
+                    name: 'role',
+                    type: 'list',
+                    message: 'What is the employee\'s role?',
+                    choices: roleList
+                },
+                {
+                    name: 'manager',
+                    type: 'list',
+                    message: 'Who is the employee\'s manager?',
+                    choices: [
+                        `id 1 - Evelyn Lathrop`,
+                        'id 4 - Dennis Young',
+                    ],
+                },
+            ])
+            .then((answers) => {
+                const query = `INSERT INTO employee(first_name, last_name, role_id, manager_id)VALUES(?,?,(SELECT role.id FROM role WHERE role.title = ?), ?)`
+                const manager = answers.manager.split(' ');
+                const manager_id = manager[1];
+
+                connection.query(query, [answers.first_name, answers.last_name, answers.role, manager_id],
+                    (err, res) => {
+                        if (err) throw err;
+                        console.log(`\n${answers.first_name} ${answers.last_name} added Successfully`);
+                        start();
+                    })
+            });
+    });
 };
 
 const addRole = () => {
@@ -226,13 +236,13 @@ const addRole = () => {
             deptList.push(`${res[i].dept_name}`);
             deptIdList.push(res[i].id);
         };
-        console.log(`Roles: ${deptList}`);
-
+        console.log(`\nCurrent Roles:`);
+        console.log(deptList);
         inquirer
             .prompt([{
                     name: 'title',
                     type: 'input',
-                    message: 'What is the name of the role you would like to add?',
+                    message: '\nWhat is the name of the role you would like to add?\n(See above list for current department roles)',
                 },
                 {
                     name: 'salary',
@@ -280,8 +290,7 @@ const addDepartment = () => {
             .prompt([{
                 name: 'dept',
                 type: 'input',
-                message: '\nWhat is the name of the department you would like to add?',
-                choices: deptList
+                message: 'What is the name of the new department you would like to add?\n(See above list for current department titles)',
             }, ])
             .then((answers) => {
                 const query = `INSERT INTO department(dept_name)VALUES(?)`
@@ -317,7 +326,7 @@ const removeEmployee = () => {
                 let query2 = `DELETE FROM employee where first_name = "${removeEmployee[0]}" AND last_name = "${removeEmployee[1]}"`;
                 connection.query(query2, (err, res) => {
                     if (err) throw err;
-                    console.log(`Employee Removed`);
+                    console.log(`Employee ${answers.employees} Removed`);
                     start();
                 });
             });
@@ -358,7 +367,6 @@ const updateEmployeeRole = () => {
                         type: 'list',
                         message: 'What is the name of the employee\'s new role?',
                         choices: roleList
-
                     },
                 ])
                 .then((answers) => {
@@ -372,13 +380,91 @@ const updateEmployeeRole = () => {
                     let query3 = `UPDATE employee SET role_id = ${newRoleId} WHERE first_name = "${updateEmployee[0]}" AND last_name = "${updateEmployee[1]}"`;
                     connection.query(query3, (err, res) => {
                         if (err) throw err;
-                        console.log(`${answers.employees}\'s Role Updated to ${answers.newRole}`);
+                        console.log(`\n${answers.employees}\'s Role Updated to ${answers.newRole}`);
                         start();
                     });
                 });
         });
     });
 };
+// const updateEmployeeMgr = () => {
+//     const query = `SELECT * FROM employee`;
+
+//     connection.query(query, (err, res) => {
+//         if (err) throw err;
+//         let employeeList = [];
+//         for (let i = 0; i < res.length; i++) {
+//             employeeList.push(`${res[i].first_name} ${res[i].last_name}`)
+//         };
+//         // console.log(`Employees: ${employeeList}`);
+
+//         const query2 = `SELECT DISTINCT IFNULL(CONCAT(m.first_name, ' ',m.last_name),"") AS 'Managers'
+//         FROM employee
+//         LEFT JOIN employee m ON (employee.manager_id = m.id);`
+//         connection.query(query2, (err, res) => {
+//             if (err) throw err;
+//             let mgrList = [];
+//             let mgrIdList = [];
+//             for (let i = 0; i < res.length; i++) {
+//                 if ('Managers') {
+//                     mgrList.push(`${res[i].first_name} ${res[i].last_name}`)
+//                     mgrIdList.push(res[i].id);
+//                 };
+//             };
+//             console.log(res);
+//             console.log(`Managers: ${mgrList}`);
+//             console.log(`Managers: ${mgrIdList}`);
+
+
+//             inquirer
+//                 .prompt([{
+//                         name: 'employees',
+//                         type: 'list',
+//                         message: 'What is the name of the employee you would like to update?',
+//                         choices: employeeList
+//                     },
+//                     {
+//                         name: 'newManager',
+//                         type: 'list',
+//                         message: 'What is the name of the employee\'s new manager?',
+//                         choices: mgrList
+
+//                     },
+//                 ])
+//                 .then((answers) => {
+//                     let newManagerId = '';
+//                     for (let i = 0; i < mgrList.length; i++) {
+//                         if (mgrList[i] === answers.newManager) {
+//                             newManagerId = mgrIdList[i];
+//                         }
+//                     }
+//                     let updateEmployee = answers.employees.split(' ');
+//                     // let updateManager = answers.newManager.split(' ');
+//                     let query3 = `UPDATE employee SET manager_id = ${newManagerId} WHERE first_name = "${updateEmployee[0]}" AND last_name = "${updateEmployee[1]}"`;
+//                     connection.query(query3, (err, res) => {
+//                         if (err) throw err;
+//                         console.log(`\n${answers.employees}\'s Manager Updated to ${answers.newManager}`);
+//                         start();
+//                     });
+//                 });
+//         });
+//     });
+// };
+
+// const updateEmployeeMgr = () => {
+//     const query2 = `SELECT DISTINCT IFNULL(CONCAT(m.first_name, ' ',m.last_name),"") AS 'Managers'
+//     FROM employee
+//     LEFT JOIN employee m ON (employee.manager_id = m.id);`
+//     connection.query(query2, (err, res) => {
+//         if (err) throw err;
+//         const mgrList = [];
+//         for (let i = 0; i < res.length; i++) {
+//             mgrList.push(`${res[i].first_name} ${res[i].last_name}`)
+//         };
+//         console.table(res);
+//         start();
+//     });
+// };
 
 // connect to the mysql server and sql database
 connection.connect((err) => {
