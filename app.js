@@ -174,6 +174,7 @@ const viewAllManagers = () => {
 
 const addEmployee = () => {
     let query = `Select * FROM role`;
+
     connection.query(query, (err, res) => {
         if (err) throw err;
         let roleList = [];
@@ -182,47 +183,64 @@ const addEmployee = () => {
             roleList.push(`${res[i].title}`);
             roleIdList.push(res[i].id);
         };
-        console.log(chalk.bold.magenta(`Roles: ${roleList}`));
 
-        inquirer
-            .prompt([{
-                    name: 'first_name',
-                    type: 'input',
-                    message: 'Enter employee\'s first name: ',
-                },
-                {
-                    name: 'last_name',
-                    type: 'input',
-                    message: 'Enter employee\'s last name: ',
-                },
-                {
-                    name: 'role',
-                    type: 'list',
-                    message: 'What is the employee\'s role?',
-                    choices: roleList
-                },
-                {
-                    name: 'manager',
-                    type: 'list',
-                    message: 'Who is the employee\'s manager?',
-                    choices: [
-                        `id 1 - Evelyn Lathrop`,
-                        'id 4 - Dennis Young',
-                    ],
-                },
-            ])
-            .then((answers) => {
-                const query = `INSERT INTO employee(first_name, last_name, role_id, manager_id)VALUES(?,?,(SELECT role.id FROM role WHERE role.title = ?), ?)`
-                const manager = answers.manager.split(' ');
-                const manager_id = manager[1];
+        const query2 = `SELECT DISTINCT m.first_name, m.last_name, m.id
+        FROM employee
+        LEFT JOIN employee m ON (employee.manager_id = m.id)`;
 
-                connection.query(query, [answers.first_name, answers.last_name, answers.role, manager_id],
-                    (err, res) => {
-                        if (err) throw err;
-                        console.log((chalk.magenta(`\n${answers.first_name} ${answers.last_name} added Successfully`)));
-                        start();
-                    })
-            });
+        connection.query(query2, (err, res) => {
+            if (err) throw err;
+            let mgrList = [];
+            let mgrIdList = [];
+            for (let i = 0; i < res.length; i++) {
+                mgrList.push(`${res[i].first_name} ${res[i].last_name}`);
+                mgrIdList.push(res[i].id);
+            };
+            mgrList.shift();
+            mgrIdList.shift();
+
+            inquirer
+                .prompt([{
+                        name: 'first_name',
+                        type: 'input',
+                        message: 'Enter employee\'s first name: ',
+                    },
+                    {
+                        name: 'last_name',
+                        type: 'input',
+                        message: 'Enter employee\'s last name: ',
+                    },
+                    {
+                        name: 'role',
+                        type: 'list',
+                        message: 'What is the employee\'s role?',
+                        choices: roleList
+                    },
+                    {
+                        name: 'manager',
+                        type: 'list',
+                        message: 'Who is the employee\'s manager?',
+                        choices: mgrList
+                    },
+                ])
+                .then((answers) => {
+                    let newMgrId = '';
+                    for (let i = 0; i < mgrList.length; i++) {
+                        if (mgrList[i] === answers.manager) {
+                            newMgrId = mgrIdList[i];
+                        }
+                    }
+                    const query3 = `INSERT INTO employee(first_name, last_name, role_id, manager_id)VALUES(?,?,(SELECT role.id FROM role WHERE role.title = ?), ?)`
+
+                    connection.query(query3, [answers.first_name, answers.last_name, answers.role, newMgrId],
+                        (err, res) => {
+                            console.log(newMgrId);
+                            if (err) throw err;
+                            console.log(`\n${answers.first_name} ${answers.last_name} added Successfully`);
+                            start();
+                        });
+                });
+        });
     });
 };
 
