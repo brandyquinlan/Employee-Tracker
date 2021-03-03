@@ -1,6 +1,7 @@
 const mysql = require('mysql');
 const inquirer = require('inquirer');
 const logo = require('asciiart-logo');
+const chalk = require('chalk');
 
 // create the connection information for the sql database
 const connection = mysql.createConnection({
@@ -71,7 +72,7 @@ const start = () => {
 };
 
 const viewAllEmployees = () => {
-    console.log(logo({ name: 'ALL EMPLOYEES' }).render());
+    console.log(chalk.cyan(logo({ name: 'ALL EMPLOYEES' }).render()));
     connection.query(`SELECT employee.id AS 'ID',
     employee.first_name AS 'First Name',
     employee.last_name AS 'Last Name',
@@ -92,7 +93,7 @@ const viewAllEmployees = () => {
 };
 
 const viewAllByDept = () => {
-    console.log(logo({ name: 'ALL EMPLOYEES BY DEPARTMENT' }).render());
+    console.log(chalk.cyan(logo({ name: 'ALL EMPLOYEES BY DEPARTMENT' }).render()));
     connection.query(`SELECT employee.id AS 'ID',
     employee.first_name AS 'First Name',
     employee.last_name AS 'Last Name',
@@ -114,7 +115,7 @@ const viewAllByDept = () => {
 };
 
 const viewAllByMgr = () => {
-    console.log(logo({ name: 'ALL EMPLOYEES BY MANAGER' }).render());
+    console.log(chalk.cyan(logo({ name: 'ALL EMPLOYEES BY MANAGER' }).render()));
     connection.query(`SELECT employee.id AS 'ID',
     employee.first_name AS 'First Name',
     employee.last_name AS 'Last Name',
@@ -136,7 +137,7 @@ const viewAllByMgr = () => {
 };
 
 const viewAllDepartments = () => {
-    console.log(logo({ name: 'ALL Departments' }).render());
+    console.log(chalk.cyan(logo({ name: 'ALL Departments' }).render()));
     const query = `SELECT dept_name AS 'Departments'
     FROM department;`
     connection.query(query, (err, res) => {
@@ -159,7 +160,7 @@ const viewAllRoles = () => {
 };
 
 const viewAllManagers = () => {
-    console.log(logo({ name: 'ALL Managers' }).render());
+    console.log(chalk.cyan(logo({ name: 'ALL Managers' }).render()));
 
     const query = `SELECT DISTINCT IFNULL(CONCAT(m.first_name, ' ',m.last_name),"") AS 'Managers'
     FROM employee
@@ -181,7 +182,7 @@ const addEmployee = () => {
             roleList.push(`${res[i].title}`);
             roleIdList.push(res[i].id);
         };
-        console.log(`Roles: ${roleList}`);
+        console.log(chalk.bold.magenta(`Roles: ${roleList}`));
 
         inquirer
             .prompt([{
@@ -218,7 +219,7 @@ const addEmployee = () => {
                 connection.query(query, [answers.first_name, answers.last_name, answers.role, manager_id],
                     (err, res) => {
                         if (err) throw err;
-                        console.log(`\n${answers.first_name} ${answers.last_name} added Successfully`);
+                        console.log((chalk.magenta(`\n${answers.first_name} ${answers.last_name} added Successfully`)));
                         start();
                     })
             });
@@ -268,7 +269,7 @@ const addRole = () => {
                 connection.query(query, [answers.title, answers.salary, newDeptId],
                     (err, res) => {
                         if (err) throw err;
-                        console.log(`\n${answers.title} Role Added Successfully`);
+                        console.log(chalk.magenta(`\n${answers.title} Role Added Successfully`));
                         start();
                     });
             });
@@ -298,7 +299,7 @@ const addDepartment = () => {
                 connection.query(query, [answers.dept],
                     (err, res) => {
                         if (err) throw err;
-                        console.log(`\n${answers.dept} Department Added Successfully`);
+                        console.log(chalk.magenta(`\n${answers.dept} Department Added Successfully`));
                         start();
                     });
             });
@@ -326,7 +327,7 @@ const removeEmployee = () => {
                 let query2 = `DELETE FROM employee where first_name = "${removeEmployee[0]}" AND last_name = "${removeEmployee[1]}"`;
                 connection.query(query2, (err, res) => {
                     if (err) throw err;
-                    console.log(`Employee ${answers.employees} Removed`);
+                    console.log((chalk.magenta(`Employee ${answers.employees} Removed`)));
                     start();
                 });
             });
@@ -380,7 +381,7 @@ const updateEmployeeRole = () => {
                     let query3 = `UPDATE employee SET role_id = ${newRoleId} WHERE first_name = "${updateEmployee[0]}" AND last_name = "${updateEmployee[1]}"`;
                     connection.query(query3, (err, res) => {
                         if (err) throw err;
-                        console.log(`\n${answers.employees}\'s Role Updated to ${answers.newRole}`);
+                        console.log((chalk.magenta(`\n${answers.employees}\'s Role Updated to ${answers.newRole}`)));
                         start();
                     });
                 });
