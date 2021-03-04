@@ -116,25 +116,47 @@ const viewAllByDept = () => {
 };
 
 const viewAllByMgr = () => {
-    console.log(chalk.cyan(logo({ name: 'ALL EMPLOYEES BY MANAGER' }).render()));
-    connection.query(`SELECT employee.id AS 'ID',
-    employee.first_name AS 'First Name',
-    employee.last_name AS 'Last Name',
-    role.title AS 'Title',
-    department.dept_name AS 'Department',
-    role.salary AS 'Salary',
-    CONCAT(m.first_name, ' ',m.last_name) AS 'Manager'
+    let query = `SELECT DISTINCT m.first_name, m.last_name, m.id
     FROM employee
-    LEFT JOIN employee m ON (employee.manager_id = m.id)
-    LEFT JOIN role ON employee.role_id = role.id
-    LEFT JOIN department ON department.id = role.dept_id
-    ORDER by manager;`,
-        (err, res) => {
-            if (err) throw err;
-            console.table(res);
-            start();
-        }
-    );
+    LEFT JOIN employee m ON (employee.manager_id = m.id)`;
+
+    connection.query(query, (err, res) => {
+        if (err) throw err;
+        let mgrList = [];
+        let mgrIdList = [];
+        for (let i = 0; i < res.length; i++) {
+            mgrList.push(`${res[i].first_name} ${res[i].last_name}`);
+            mgrIdList.push(res[i].id);
+        };
+        mgrList.shift();
+        mgrIdList.shift();
+
+        inquirer
+            .prompt([{
+                name: 'manager',
+                type: 'list',
+                message: 'What is the manager\s name?\n',
+                choices: mgrList
+            }, ])
+            .then((answers) => {
+                let newMgrId = '';
+                for (let i = 0; i < mgrList.length; i++) {
+                    if (mgrList[i] === answers.manager) {
+                        newMgrId = mgrIdList[i];
+                    }
+                }
+                const query2 = `SELECT CONCAT(first_name, ' ',last_name) AS ?
+                FROM employee
+                WHERE employee.manager_id = ?`
+
+                connection.query(query2, [answers.manager, newMgrId], (err, res) => {
+                    if (err) throw err;
+                    console.log(chalk.cyan(logo({ name: 'EMPLOYEES BY MANAGER' }).render()));
+                    console.table(res);
+                    start();
+                });
+            });
+    });
 };
 
 const viewAllDepartments = () => {
@@ -244,6 +266,7 @@ const addEmployee = () => {
         });
     });
 };
+
 
 const addRole = () => {
     let query = `SELECT * FROM department`;
