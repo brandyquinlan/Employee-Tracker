@@ -1,6 +1,5 @@
 const mysql = require('mysql');
 const inquirer = require('inquirer');
-const cTable = require('console.table');
 const logo = require('asciiart-logo');
 const chalk = require('chalk');
 
@@ -27,8 +26,10 @@ const start = () => {
             type: 'list',
             message: '\nWhat would you like to do?',
             choices: ['View All Employees',
-                'View Al Employees by Department',
-                'View All Employees by Manager',
+                'View All Employees, Sorted by Manager',
+                'View All Employees, Sorted by Department',
+                'View Employees by Select Manager',
+                'View Employees by Select Department',
                 'View All Departments',
                 'View All Roles',
                 'View All Managers',
@@ -37,35 +38,36 @@ const start = () => {
                 'Add Employee',
                 'Remove Employee',
                 'Update Employee Role',
-                'Update Employee Manager',
                 'Exit'
             ],
         })
         .then((answer) => {
             if (answer.startMenu === 'View All Employees') {
                 viewAllEmployees();
-            } else if (answer.startMenu === 'View Al Employees by Department') {
-                viewAllByDept();
-            } else if (answer.startMenu === 'View All Employees by Manager') {
+            } else if (answer.startMenu === 'View All Employees, Sorted by Manager') {
                 viewAllByMgr();
+            } else if (answer.startMenu === 'View All Employees, Sorted by Department') {
+                viewAllByDept();
+            } else if (answer.startMenu === 'View Employees by Select Department') {
+                viewEmpByDept();
+            } else if (answer.startMenu === 'View Employees by Select Manager') {
+                viewEmpByMgr();
             } else if (answer.startMenu === 'View All Departments') {
                 viewAllDepartments();
             } else if (answer.startMenu === 'View All Roles') {
                 viewAllRoles();
             } else if (answer.startMenu === 'View All Managers') {
                 viewAllManagers();
-            } else if (answer.startMenu === 'Add Employee') {
-                addEmployee();
-            } else if (answer.startMenu === 'Add Role') {
-                addRole();
             } else if (answer.startMenu === 'Add Department') {
                 addDepartment();
+            } else if (answer.startMenu === 'Add Role') {
+                addRole();
+            } else if (answer.startMenu === 'Add Employee') {
+                addEmployee();
             } else if (answer.startMenu === 'Remove Employee') {
                 removeEmployee();
             } else if (answer.startMenu === 'Update Employee Role') {
                 updateEmployeeRole();
-            } else if (answer.startMenu === 'Update Employee Manager') {
-                updateEmployeeMgr();
             } else if (answer.startMenu === 'Exit') {
                 connection.end();
             }
@@ -84,8 +86,30 @@ const viewAllEmployees = () => {
     FROM employee
     LEFT JOIN employee m ON (employee.manager_id = m.id)
     LEFT JOIN role ON employee.role_id = role.id
-    LEFT JOIN department ON department.id = role.dept_id;`,
-        function(err, res) {
+    LEFT JOIN department ON department.id = role.dept_id`,
+        (err, res) => {
+            if (err) throw err;
+            console.table(res);
+            start();
+        }
+    );
+};
+
+const viewAllByMgr = () => {
+    console.log(chalk.cyan(logo({ name: 'ALL EMPLOYEES SORTED BY MANAGER' }).render()));
+    connection.query(`SELECT employee.id AS 'ID',
+    employee.first_name AS 'First Name',
+    employee.last_name AS 'Last Name',
+    role.title AS 'Title',
+    department.dept_name AS 'Department',
+    role.salary AS 'Salary',
+    CONCAT(m.first_name, ' ',m.last_name) AS 'Manager'
+    FROM employee
+    LEFT JOIN employee m ON (employee.manager_id = m.id)
+    LEFT JOIN role ON employee.role_id = role.id
+    LEFT JOIN department ON department.id = role.dept_id
+    ORDER by manager;`,
+        (err, res) => {
             if (err) throw err;
             console.table(res);
             start();
@@ -115,7 +139,7 @@ const viewAllByDept = () => {
     );
 };
 
-const viewAllByMgr = () => {
+const viewEmpByMgr = () => {
     let query = `SELECT DISTINCT m.first_name, m.last_name, m.id
     FROM employee
     LEFT JOIN employee m ON (employee.manager_id = m.id)`;
@@ -159,6 +183,59 @@ const viewAllByMgr = () => {
     });
 };
 
+const viewEmpByDept = () => {
+    let query = `SELECT * FROM department`;
+
+    connection.query(query, (err, res) => {
+        if (err) throw err;
+        let deptList = [];
+        let deptIdList = [];
+        for (let i = 0; i < res.length; i++) {
+            deptList.push(`${res[i].dept_name}`);
+            deptIdList.push(`${res[i].dept_id}`);
+        };
+
+
+        inquirer
+            .prompt([{
+                name: 'dept',
+                type: 'list',
+                message: 'Which department you would like to view?',
+                choices: deptList
+            }, ])
+            .then((answers) => {
+                console.log(deptList);
+                let newDeptId = '';
+                for (let i = 0; i < deptList.length; i++) {
+                    if (deptList[i] === answers.manager) {
+                        newDeptId = mgrIdList[i];
+                    }
+                }
+                const query2 = `SELECT employee.id AS 'ID',
+                CONCAT(employee.first_name, ' ',employee.last_name) AS 'Employee',
+                role.title AS 'Title',
+                department.dept_name AS 'Department',
+                role.salary AS 'Salary',
+                CONCAT(m.first_name, ' ',m.last_name) AS 'Manager'
+                FROM employee
+                LEFT JOIN employee m ON (employee.manager_id = m.id)
+                LEFT JOIN role ON employee.role_id = role.id
+                LEFT JOIN department ON department.id = role.dept_id
+                WHERE dept_name = ?`
+
+                connection.query(query2, [answers.dept],
+                    (err, res) => {
+                        if (err) throw err;
+                        console.log(res);
+
+                        console.log(chalk.cyan(logo({ name: 'EMPLOYEES BY DEPARTMENT' }).render()));
+                        console.table(res);
+                        start();
+                    });
+            });
+    });
+};
+
 const viewAllDepartments = () => {
     console.log(chalk.cyan(logo({ name: 'ALL Departments' }).render()));
     const query = `SELECT dept_name AS 'Departments'
@@ -171,7 +248,7 @@ const viewAllDepartments = () => {
 };
 
 const viewAllRoles = () => {
-    console.log(logo({ name: 'ALL Roles' }).render());
+    console.log(chalk.cyan(logo({ name: 'ALL Roles' }).render()));
     let roleList = [];
     const query = `SELECT role.title AS 'Roles'
     FROM role;`
@@ -227,11 +304,13 @@ const addEmployee = () => {
                         name: 'first_name',
                         type: 'input',
                         message: 'Enter employee\'s first name: ',
+                        validate: validateText
                     },
                     {
                         name: 'last_name',
                         type: 'input',
                         message: 'Enter employee\'s last name: ',
+                        validate: validateText
                     },
                     {
                         name: 'role',
@@ -257,9 +336,8 @@ const addEmployee = () => {
 
                     connection.query(query3, [answers.first_name, answers.last_name, answers.role, newMgrId],
                         (err, res) => {
-                            console.log(newMgrId);
                             if (err) throw err;
-                            console.log(`\n${answers.first_name} ${answers.last_name} added Successfully`);
+                            console.log(chalk.yellow(`\n${answers.first_name} ${answers.last_name} added Successfully`));
                             start();
                         });
                 });
@@ -279,18 +357,19 @@ const addRole = () => {
             deptList.push(`${res[i].dept_name}`);
             deptIdList.push(res[i].id);
         };
-        console.log(`\nCurrent Roles:`);
-        console.log(deptList);
+
         inquirer
             .prompt([{
                     name: 'title',
                     type: 'input',
-                    message: '\nWhat is the name of the role you would like to add?\n(See above list for current department roles)',
+                    message: '\nWhat is the name of the role you would like to add?',
+                    validate: validateText
                 },
                 {
                     name: 'salary',
                     type: 'input',
                     message: 'What is the salary for this role?',
+                    validate: validateNumber
                 },
                 {
                     name: 'dept',
@@ -311,7 +390,7 @@ const addRole = () => {
                 connection.query(query, [answers.title, answers.salary, newDeptId],
                     (err, res) => {
                         if (err) throw err;
-                        console.log(chalk.magenta(`\n${answers.title} Role Added Successfully`));
+                        console.log(chalk.yellow(`\n${answers.title} Role Added\nDepartment: ${answers.dept}\nSalary: ${answers.salary}`));
                         start();
                     });
             });
@@ -341,7 +420,7 @@ const addDepartment = () => {
                 connection.query(query, [answers.dept],
                     (err, res) => {
                         if (err) throw err;
-                        console.log(chalk.magenta(`\n${answers.dept} Department Added Successfully`));
+                        console.log(chalk.yellow(`\n${answers.dept} Department Added Successfully`));
                         start();
                     });
             });
@@ -366,12 +445,25 @@ const removeEmployee = () => {
             }, ])
             .then((answers) => {
                 let removeEmployee = answers.employees.split(' ');
-                let query2 = `DELETE FROM employee where first_name = "${removeEmployee[0]}" AND last_name = "${removeEmployee[1]}"`;
-                connection.query(query2, (err, res) => {
-                    if (err) throw err;
-                    console.log((chalk.magenta(`Employee ${answers.employees} Removed`)));
-                    start();
-                });
+
+                inquirer
+                    .prompt([{
+                        name: 'confirm',
+                        type: 'confirm',
+                        message: 'Are you sure you want to remove employee ${answers.employees}?'
+                    }, ])
+                    .then((answers) => {
+                        if (!answers.confirm) {
+                            start();
+                        } else {
+                            let query2 = `DELETE FROM employee where first_name = "${removeEmployee[0]}" AND last_name = "${removeEmployee[1]}"`;
+                            connection.query(query2, (err, res) => {
+                                if (err) throw err;
+                                console.log((chalk.yellow(`Employee ${removeEmployee} Removed Successfully`)));
+                                start();
+                            });
+                        };
+                    });
             });
     });
 };
@@ -423,91 +515,27 @@ const updateEmployeeRole = () => {
                     let query3 = `UPDATE employee SET role_id = ${newRoleId} WHERE first_name = "${updateEmployee[0]}" AND last_name = "${updateEmployee[1]}"`;
                     connection.query(query3, (err, res) => {
                         if (err) throw err;
-                        console.log((chalk.magenta(`\n${answers.employees}\'s Role Updated to ${answers.newRole}`)));
+                        console.log((chalk.yellow(`\n${answers.employees}\'s Role Updated to ${answers.newRole}`)));
                         start();
                     });
                 });
         });
     });
 };
-// const updateEmployeeMgr = () => {
-//     const query = `SELECT * FROM employee`;
 
-//     connection.query(query, (err, res) => {
-//         if (err) throw err;
-//         let employeeList = [];
-//         for (let i = 0; i < res.length; i++) {
-//             employeeList.push(`${res[i].first_name} ${res[i].last_name}`)
-//         };
-//         // console.log(`Employees: ${employeeList}`);
+let validateNumber = (input) => {
+    if (isNaN(input)) {
+        return "Please enter a number";
+    }
+    return true;
+}
 
-//         const query2 = `SELECT DISTINCT IFNULL(CONCAT(m.first_name, ' ',m.last_name),"") AS 'Managers'
-//         FROM employee
-//         LEFT JOIN employee m ON (employee.manager_id = m.id);`
-//         connection.query(query2, (err, res) => {
-//             if (err) throw err;
-//             let mgrList = [];
-//             let mgrIdList = [];
-//             for (let i = 0; i < res.length; i++) {
-//                 if ('Managers') {
-//                     mgrList.push(`${res[i].first_name} ${res[i].last_name}`)
-//                     mgrIdList.push(res[i].id);
-//                 };
-//             };
-//             console.log(res);
-//             console.log(`Managers: ${mgrList}`);
-//             console.log(`Managers: ${mgrIdList}`);
-
-
-//             inquirer
-//                 .prompt([{
-//                         name: 'employees',
-//                         type: 'list',
-//                         message: 'What is the name of the employee you would like to update?',
-//                         choices: employeeList
-//                     },
-//                     {
-//                         name: 'newManager',
-//                         type: 'list',
-//                         message: 'What is the name of the employee\'s new manager?',
-//                         choices: mgrList
-
-//                     },
-//                 ])
-//                 .then((answers) => {
-//                     let newManagerId = '';
-//                     for (let i = 0; i < mgrList.length; i++) {
-//                         if (mgrList[i] === answers.newManager) {
-//                             newManagerId = mgrIdList[i];
-//                         }
-//                     }
-//                     let updateEmployee = answers.employees.split(' ');
-//                     // let updateManager = answers.newManager.split(' ');
-//                     let query3 = `UPDATE employee SET manager_id = ${newManagerId} WHERE first_name = "${updateEmployee[0]}" AND last_name = "${updateEmployee[1]}"`;
-//                     connection.query(query3, (err, res) => {
-//                         if (err) throw err;
-//                         console.log(`\n${answers.employees}\'s Manager Updated to ${answers.newManager}`);
-//                         start();
-//                     });
-//                 });
-//         });
-//     });
-// };
-
-// const updateEmployeeMgr = () => {
-//     const query2 = `SELECT DISTINCT IFNULL(CONCAT(m.first_name, ' ',m.last_name),"") AS 'Managers'
-//     FROM employee
-//     LEFT JOIN employee m ON (employee.manager_id = m.id);`
-//     connection.query(query2, (err, res) => {
-//         if (err) throw err;
-//         const mgrList = [];
-//         for (let i = 0; i < res.length; i++) {
-//             mgrList.push(`${res[i].first_name} ${res[i].last_name}`)
-//         };
-//         console.table(res);
-//         start();
-//     });
-// };
+let validateText = (input) => {
+    if (!input) {
+        return "Input cannot be blank";
+    }
+    return true;
+}
 
 // connect to the mysql server and sql database
 connection.connect((err) => {
