@@ -1,2 +1,8 @@
 node_modules
+<<<<<<< HEAD
 .DS_Store
+=======
+.DS_Store
+TODO.js
+process.env
+>>>>>>> 72d773f85115fa7b367a9be4abac476c3682ceed
