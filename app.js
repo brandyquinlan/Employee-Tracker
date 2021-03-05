@@ -1,20 +1,16 @@
+// require('dotenv').config();
 const mysql = require('mysql');
 const inquirer = require('inquirer');
 const logo = require('asciiart-logo');
+const cTable = require('console.table');
 const chalk = require('chalk');
 
 // create the connection information for the sql database
 const connection = mysql.createConnection({
     host: 'localhost',
-
-    // Your port; if not 3306
     port: 3306,
-
-    // Your username
     user: 'root',
-
-    // Your password
-    password: '2Calicos!',
+    password: 'password',
     database: 'employees_db'
 });
 
@@ -75,7 +71,6 @@ const start = () => {
 };
 
 const viewAllEmployees = () => {
-    console.log(chalk.cyan(logo({ name: 'ALL EMPLOYEES' }).render()));
     connection.query(`SELECT employee.id AS 'ID',
     employee.first_name AS 'First Name',
     employee.last_name AS 'Last Name',
@@ -89,6 +84,7 @@ const viewAllEmployees = () => {
     LEFT JOIN department ON department.id = role.dept_id`,
         (err, res) => {
             if (err) throw err;
+            console.log(chalk.cyan(logo({ name: 'ALL EMPLOYEES' }).render()));
             console.table(res);
             start();
         }
@@ -96,7 +92,6 @@ const viewAllEmployees = () => {
 };
 
 const viewAllByMgr = () => {
-    console.log(chalk.cyan(logo({ name: 'ALL EMPLOYEES SORTED BY MANAGER' }).render()));
     connection.query(`SELECT employee.id AS 'ID',
     employee.first_name AS 'First Name',
     employee.last_name AS 'Last Name',
@@ -111,6 +106,7 @@ const viewAllByMgr = () => {
     ORDER by manager;`,
         (err, res) => {
             if (err) throw err;
+            console.log(chalk.cyan(logo({ name: 'ALL EMPLOYEES BY MANAGER' }).render()));
             console.table(res);
             start();
         }
@@ -118,7 +114,6 @@ const viewAllByMgr = () => {
 };
 
 const viewAllByDept = () => {
-    console.log(chalk.cyan(logo({ name: 'ALL EMPLOYEES BY DEPARTMENT' }).render()));
     connection.query(`SELECT employee.id AS 'ID',
     employee.first_name AS 'First Name',
     employee.last_name AS 'Last Name',
@@ -133,6 +128,7 @@ const viewAllByDept = () => {
     ORDER by dept_name;`,
         function(err, res) {
             if (err) throw err;
+            console.log(chalk.cyan(logo({ name: 'ALL EMPLOYEES BY DEPARTMENT' }).render()));
             console.table(res);
             start();
         }
@@ -149,11 +145,11 @@ const viewEmpByMgr = () => {
         let mgrList = [];
         let mgrIdList = [];
         for (let i = 0; i < res.length; i++) {
-            mgrList.push(`${res[i].first_name} ${res[i].last_name}`);
-            mgrIdList.push(res[i].id);
+            if (res[i].first_name != null || res[i].last_name != null) {
+                mgrList.push(`${res[i].first_name} ${res[i].last_name}`);
+                mgrIdList.push(res[i].id);
+            };
         };
-        mgrList.shift();
-        mgrIdList.shift();
 
         inquirer
             .prompt([{
@@ -175,7 +171,8 @@ const viewEmpByMgr = () => {
 
                 connection.query(query2, [answers.manager, newMgrId], (err, res) => {
                     if (err) throw err;
-                    console.log(chalk.cyan(logo({ name: 'EMPLOYEES BY MANAGER' }).render()));
+                    const mgrName = answers.manager;
+                    console.log(chalk.cyan(logo({ name: mgrName }).render()));
                     console.table(res);
                     start();
                 });
@@ -226,9 +223,8 @@ const viewEmpByDept = () => {
                 connection.query(query2, [answers.dept],
                     (err, res) => {
                         if (err) throw err;
-                        console.log(res);
-
-                        console.log(chalk.cyan(logo({ name: 'EMPLOYEES BY DEPARTMENT' }).render()));
+                        const deptName = answers.dept;
+                        console.log(chalk.cyan(logo({ name: deptName }).render()));
                         console.table(res);
                         start();
                     });
@@ -293,11 +289,11 @@ const addEmployee = () => {
             let mgrList = [];
             let mgrIdList = [];
             for (let i = 0; i < res.length; i++) {
-                mgrList.push(`${res[i].first_name} ${res[i].last_name}`);
-                mgrIdList.push(res[i].id);
+                if (res[i].first_name != null || res[i].last_name != null) {
+                    mgrList.push(`${res[i].first_name} ${res[i].last_name}`);
+                    mgrIdList.push(res[i].id);
+                };
             };
-            mgrList.shift();
-            mgrIdList.shift();
 
             inquirer
                 .prompt([{
@@ -337,8 +333,26 @@ const addEmployee = () => {
                     connection.query(query3, [answers.first_name, answers.last_name, answers.role, newMgrId],
                         (err, res) => {
                             if (err) throw err;
-                            console.log(chalk.yellow(`\n${answers.first_name} ${answers.last_name} added Successfully`));
-                            start();
+                            let first_name = answers.first_name;
+                            let last_name = answers.last_name;
+                            let role = answers.role;
+                            let manager = answers.manager;
+
+                            inquirer
+                                .prompt([{
+                                    name: 'confirm',
+                                    type: 'confirm',
+                                    message: 'Would you like to add another employee?'
+                                }, ])
+                                .then((answers) => {
+                                    if (!answers.confirm) {
+                                        console.log(chalk.yellow(`\nNew Employee Added Successfully:\nName: ${first_name} ${last_name}\nRole: ${role}\nManager: ${manager}`));
+                                        start();
+                                    } else {
+                                        addEmployee();
+                                    };
+                                });
+
                         });
                 });
         });
@@ -413,19 +427,39 @@ const addDepartment = () => {
                 name: 'dept',
                 type: 'input',
                 message: 'What is the name of the new department you would like to add?\n(See above list for current department titles)',
+                validate: validateText
             }, ])
             .then((answers) => {
                 const query = `INSERT INTO department(dept_name)VALUES(?)`
 
                 connection.query(query, [answers.dept],
                     (err, res) => {
-                        if (err) throw err;
-                        console.log(chalk.yellow(`\n${answers.dept} Department Added Successfully`));
-                        start();
+                        if (err.errno == 1062) {
+                            console.log(chalk.red(`${answers.dept} already exists`)); //we send the flash msg
+                            // return res.redirect(start());
+                            inquirer
+                                .prompt([{
+                                    name: 'confirm',
+                                    type: 'confirm',
+                                    message: 'Would you like to add a new department?'
+                                }, ])
+                                .then((answers) => {
+                                    if (!answers.confirm) {
+                                        start();
+                                    } else {
+                                        addDepartment();
+                                    };
+                                });
+                        } else {
+                            console.log(chalk.yellow(`\n${answers.dept} Department Added Successfully`));
+                            start();
+                        };
                     });
             });
     });
 };
+
+
 
 const removeEmployee = () => {
     let query = `SELECT * FROM employee`;
