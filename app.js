@@ -14,14 +14,15 @@ const connection = mysql.createConnection({
     database: 'employees_db'
 });
 
-// function which prompts the user for what action they should take
+// Function with menu options for the user
 const start = () => {
     inquirer
         .prompt({
             name: 'startMenu',
             type: 'list',
             message: '\nWhat would you like to do?',
-            choices: ['View All Employees',
+            choices: [
+                'View All Employees',
                 'View All Employees, Sorted by Manager',
                 'View All Employees, Sorted by Department',
                 'View Employees by Select Manager',
@@ -37,6 +38,7 @@ const start = () => {
                 'Exit'
             ],
         })
+        // Call function for selected action
         .then((answer) => {
             if (answer.startMenu === 'View All Employees') {
                 viewAllEmployees();
@@ -71,6 +73,7 @@ const start = () => {
 };
 
 const viewAllEmployees = () => {
+    // Query mySQL and display a table with all of the employees
     connection.query(`SELECT employee.id AS 'ID',
     employee.first_name AS 'First Name',
     employee.last_name AS 'Last Name',
@@ -92,6 +95,7 @@ const viewAllEmployees = () => {
 };
 
 const viewAllByMgr = () => {
+    // Query employee, role and department tables and display a table with all of the employees sorted by manager
     connection.query(`SELECT employee.id AS 'ID',
     employee.first_name AS 'First Name',
     employee.last_name AS 'Last Name',
@@ -114,6 +118,7 @@ const viewAllByMgr = () => {
 };
 
 const viewAllByDept = () => {
+    // Query employee, role and department tables and display a table with all of the employees sorted by department
     connection.query(`SELECT employee.id AS 'ID',
     employee.first_name AS 'First Name',
     employee.last_name AS 'Last Name',
@@ -136,6 +141,7 @@ const viewAllByDept = () => {
 };
 
 const viewEmpByMgr = () => {
+    // Query employee table to create manager list to provide in inquirer prompt
     let query = `SELECT DISTINCT m.first_name, m.last_name, m.id
     FROM employee
     LEFT JOIN employee m ON (employee.manager_id = m.id)`;
@@ -150,7 +156,6 @@ const viewEmpByMgr = () => {
                 mgrIdList.push(res[i].id);
             };
         };
-
         inquirer
             .prompt([{
                 name: 'manager',
@@ -159,20 +164,28 @@ const viewEmpByMgr = () => {
                 choices: mgrList
             }, ])
             .then((answers) => {
+                // Get manager id by mapping manager
                 let newMgrId = '';
                 for (let i = 0; i < mgrList.length; i++) {
                     if (mgrList[i] === answers.manager) {
                         newMgrId = mgrIdList[i];
                     }
                 }
-                const query2 = `SELECT CONCAT(first_name, ' ',last_name) AS ?
+                // Query employee, role and department tables and display a table with all of the employees for selected manager
+                const query2 = `SELECT CONCAT(first_name, ' ',last_name) AS 'Employee',
+                role.title AS 'Title',
+                department.dept_name AS 'Department',
+                role.salary AS 'Salary'
                 FROM employee
+                LEFT JOIN role ON employee.role_id = role.id
+                LEFT JOIN department ON department.id = role.dept_id
                 WHERE employee.manager_id = ?`
 
-                connection.query(query2, [answers.manager, newMgrId], (err, res) => {
+                connection.query(query2, [newMgrId], (err, res) => {
                     if (err) throw err;
                     const mgrName = answers.manager;
                     console.log(chalk.cyan(logo({ name: mgrName }).render()));
+                    console.log(`${mgrName}\'s Employees:\n`);
                     console.table(res);
                     start();
                 });
@@ -181,6 +194,7 @@ const viewEmpByMgr = () => {
 };
 
 const viewEmpByDept = () => {
+    // Query department table to create department list to provide in inquirer prompt
     let query = `SELECT * FROM department`;
 
     connection.query(query, (err, res) => {
@@ -191,8 +205,6 @@ const viewEmpByDept = () => {
             deptList.push(`${res[i].dept_name}`);
             deptIdList.push(`${res[i].dept_id}`);
         };
-
-
         inquirer
             .prompt([{
                 name: 'dept',
@@ -208,6 +220,7 @@ const viewEmpByDept = () => {
                         newDeptId = mgrIdList[i];
                     }
                 }
+                // Query employee, role and department tables and display a table with all of the employees for selected manager
                 const query2 = `SELECT employee.id AS 'ID',
                 CONCAT(employee.first_name, ' ',employee.last_name) AS 'Employee',
                 role.title AS 'Title',
@@ -234,6 +247,7 @@ const viewEmpByDept = () => {
 
 const viewAllDepartments = () => {
     console.log(chalk.cyan(logo({ name: 'ALL Departments' }).render()));
+    // Query department table and display a table with all of the departments
     const query = `SELECT dept_name AS 'Departments'
     FROM department;`
     connection.query(query, (err, res) => {
@@ -245,7 +259,7 @@ const viewAllDepartments = () => {
 
 const viewAllRoles = () => {
     console.log(chalk.cyan(logo({ name: 'ALL Roles' }).render()));
-    let roleList = [];
+    // Query mySQL and return a table with all of the roles
     const query = `SELECT role.title AS 'Roles'
     FROM role;`
     connection.query(query, (err, res) => {
@@ -258,6 +272,7 @@ const viewAllRoles = () => {
 const viewAllManagers = () => {
     console.log(chalk.cyan(logo({ name: 'ALL Managers' }).render()));
 
+    // Query mySQL and return a table with all of the managers
     const query = `SELECT DISTINCT IFNULL(CONCAT(m.first_name, ' ',m.last_name),"") AS 'Managers'
     FROM employee
     LEFT JOIN employee m ON (employee.manager_id = m.id);`
@@ -269,6 +284,7 @@ const viewAllManagers = () => {
 };
 
 const addEmployee = () => {
+    // Query db to return role list and then push to array
     let query = `Select * FROM role`;
 
     connection.query(query, (err, res) => {
@@ -280,6 +296,7 @@ const addEmployee = () => {
             roleIdList.push(res[i].id);
         };
 
+        // Query db to return manager list and then push to array
         const query2 = `SELECT DISTINCT m.first_name, m.last_name, m.id
         FROM employee
         LEFT JOIN employee m ON (employee.manager_id = m.id)`;
@@ -321,6 +338,7 @@ const addEmployee = () => {
                         choices: mgrList
                     },
                 ])
+                // Get manager id by mapping manager in db query
                 .then((answers) => {
                     let newMgrId = '';
                     for (let i = 0; i < mgrList.length; i++) {
@@ -328,6 +346,7 @@ const addEmployee = () => {
                             newMgrId = mgrIdList[i];
                         }
                     }
+                    // Add employee to db based on user inquirer responses
                     const query3 = `INSERT INTO employee(first_name, last_name, role_id, manager_id)VALUES(?,?,(SELECT role.id FROM role WHERE role.title = ?), ?)`
 
                     connection.query(query3, [answers.first_name, answers.last_name, answers.role, newMgrId],
@@ -359,8 +378,9 @@ const addEmployee = () => {
     });
 };
 
-
+//
 const addRole = () => {
+    // Query db to return department list and then push to array
     let query = `SELECT * FROM department`;
 
     connection.query(query, (err, res) => {
@@ -392,6 +412,7 @@ const addRole = () => {
                     choices: deptList
                 },
             ])
+            // Get dept id by mapping dept in db query
             .then((answers) => {
                 let newDeptId = '';
                 for (let i = 0; i < deptList.length; i++) {
@@ -399,6 +420,7 @@ const addRole = () => {
                         newDeptId = deptIdList[i];
                     }
                 }
+                // Add role to db based on user inquirer responses
                 const query = `INSERT INTO role(title, salary, dept_id)VALUES(?,?,?)`
 
                 connection.query(query, [answers.title, answers.salary, newDeptId],
@@ -412,6 +434,7 @@ const addRole = () => {
 };
 
 const addDepartment = () => {
+    // Query db to return department list and then push to array and display to user for reference of current departments
     let query = `SELECT * FROM department`;
 
     connection.query(query, (err, res) => {
@@ -429,39 +452,22 @@ const addDepartment = () => {
                 message: 'What is the name of the new department you would like to add?\n(See above list for current department titles)',
                 validate: validateText
             }, ])
-            .then((answers) => {
-                const query = `INSERT INTO department(dept_name)VALUES(?)`
+            // Add department to db based on user inquirer responses
 
-                connection.query(query, [answers.dept],
-                    (err, res) => {
-                        if (err.errno == 1062) {
-                            console.log(chalk.red(`${answers.dept} already exists`)); //we send the flash msg
-                            // return res.redirect(start());
-                            inquirer
-                                .prompt([{
-                                    name: 'confirm',
-                                    type: 'confirm',
-                                    message: 'Would you like to add a new department?'
-                                }, ])
-                                .then((answers) => {
-                                    if (!answers.confirm) {
-                                        start();
-                                    } else {
-                                        addDepartment();
-                                    };
-                                });
-                        } else {
-                            console.log(chalk.yellow(`\n${answers.dept} Department Added Successfully`));
-                            start();
-                        };
-                    });
-            });
+        .then((answers) => {
+            const query = `INSERT INTO department(dept_name)VALUES(?)`
+
+            connection.query(query, [answers.dept],
+                (err, res) => {
+                    console.log(chalk.yellow(`\n${answers.dept} Department Added Successfully`));
+                    start();
+                });
+        });
     });
 };
 
-
-
 const removeEmployee = () => {
+    // Query employee table to get list of employees, push to array and display in inquirer prompt
     let query = `SELECT * FROM employee`;
 
     connection.query(query, (err, res) => {
@@ -478,22 +484,25 @@ const removeEmployee = () => {
                 choices: employeeList
             }, ])
             .then((answers) => {
+                // Split employee name from list into first_name and last_name
                 let removeEmployee = answers.employees.split(' ');
+                let employee = answers.employees;
 
                 inquirer
                     .prompt([{
                         name: 'confirm',
                         type: 'confirm',
-                        message: 'Are you sure you want to remove employee ${answers.employees}?'
+                        message: `Are you sure you want to remove employee ${answers.employees}?`
                     }, ])
                     .then((answers) => {
                         if (!answers.confirm) {
                             start();
                         } else {
+                            // Delete employee from employee table in db
                             let query2 = `DELETE FROM employee where first_name = "${removeEmployee[0]}" AND last_name = "${removeEmployee[1]}"`;
                             connection.query(query2, (err, res) => {
                                 if (err) throw err;
-                                console.log((chalk.yellow(`Employee ${removeEmployee} Removed Successfully`)));
+                                console.log((chalk.yellow(`Employee ${employee} Removed Successfully`)));
                                 start();
                             });
                         };
@@ -503,6 +512,7 @@ const removeEmployee = () => {
 };
 
 const updateEmployeeRole = () => {
+    // Query employee table and create array of employees to display as list in inquirer prompt
     let query = `SELECT * FROM employee`;
 
     connection.query(query, (err, res) => {
@@ -513,7 +523,9 @@ const updateEmployeeRole = () => {
         };
         console.log(`Employees: ${employeeList}`);
 
+        // Query role table, create array of roles to display to user. Get role id from mapping to role
         let query2 = `Select * FROM role`;
+
         connection.query(query2, (err, res) => {
             if (err) throw err;
             let roleList = [];
@@ -539,14 +551,18 @@ const updateEmployeeRole = () => {
                     },
                 ])
                 .then((answers) => {
+                    // Get role from inquirer response and get role id by mapping to role
                     let newRoleId = '';
                     for (let i = 0; i < roleList.length; i++) {
                         if (roleList[i] === answers.newRole) {
                             newRoleId = roleIdList[i];
                         }
                     }
+                    // Split name of employee into first_name and last_name
                     let updateEmployee = answers.employees.split(' ');
+                    // Query employee db to add employee and role names
                     let query3 = `UPDATE employee SET role_id = ${newRoleId} WHERE first_name = "${updateEmployee[0]}" AND last_name = "${updateEmployee[1]}"`;
+
                     connection.query(query3, (err, res) => {
                         if (err) throw err;
                         console.log((chalk.yellow(`\n${answers.employees}\'s Role Updated to ${answers.newRole}`)));
@@ -574,6 +590,5 @@ let validateText = (input) => {
 // connect to the mysql server and sql database
 connection.connect((err) => {
     if (err) throw err;
-    // run the start function after the connection is made to prompt the user
     start();
 });
