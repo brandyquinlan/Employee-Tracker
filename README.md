@@ -35,7 +35,7 @@ Employee Tracker is a CMS interface that makes it easy for non-developers to vie
 ## Tests
  
 ## DEMO
-* ![Play Demo](https://drive.google.com/file/d/13R-5D1GZMi7H4Mf2s9DusZm1GOJXBscJ/view?usp=sharing)
+* [Link to demo - https://drive.google.com/file/d/13R-5D1GZMi7H4Mf2s9DusZm1GOJXBscJ/view?usp=sharing](https://drive.google.com/file/d/13R-5D1GZMi7H4Mf2s9DusZm1GOJXBscJ/view?usp=sharing)
 
 ## Screenshots
 ![Screenshots](Assets/employee-tracker.png)
