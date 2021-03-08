@@ -311,6 +311,7 @@ const addEmployee = () => {
                     mgrIdList.push(res[i].id);
                 };
             };
+            mgrList.push('None');
 
             inquirer
                 .prompt([{
@@ -346,39 +347,43 @@ const addEmployee = () => {
                             newMgrId = mgrIdList[i];
                         }
                     }
-                    // Add employee to db based on user inquirer responses
-                    const query3 = `INSERT INTO employee(first_name, last_name, role_id, manager_id)VALUES(?,?,(SELECT role.id FROM role WHERE role.title = ?), ?)`
+                    if (answers.manager === 'none') {
+                        let newMgrId = '';
+                    } else {
 
-                    connection.query(query3, [answers.first_name, answers.last_name, answers.role, newMgrId],
-                        (err, res) => {
-                            if (err) throw err;
-                            let first_name = answers.first_name;
-                            let last_name = answers.last_name;
-                            let role = answers.role;
-                            let manager = answers.manager;
+                        // Add employee to db based on user inquirer responses
+                        const query3 = `INSERT INTO employee(first_name, last_name, role_id, manager_id)VALUES(?,?,(SELECT role.id FROM role WHERE role.title = ?), ?)`
 
-                            inquirer
-                                .prompt([{
-                                    name: 'confirm',
-                                    type: 'confirm',
-                                    message: 'Would you like to add another employee?'
-                                }, ])
-                                .then((answers) => {
-                                    if (!answers.confirm) {
-                                        console.log(chalk.yellow(`\nNew Employee Added Successfully:\nName: ${first_name} ${last_name}\nRole: ${role}\nManager: ${manager}`));
-                                        start();
-                                    } else {
-                                        addEmployee();
-                                    };
-                                });
+                        connection.query(query3, [answers.first_name, answers.last_name, answers.role, newMgrId],
+                            (err, res) => {
+                                if (err) throw err;
+                                let first_name = answers.first_name;
+                                let last_name = answers.last_name;
+                                let role = answers.role;
+                                let manager = answers.manager;
 
-                        });
+                                inquirer
+                                    .prompt([{
+                                        name: 'confirm',
+                                        type: 'confirm',
+                                        message: 'Would you like to add another employee?'
+                                    }, ])
+                                    .then((answers) => {
+                                        if (!answers.confirm) {
+                                            console.log(chalk.yellow(`\nNew Employee Added Successfully:\nName: ${first_name} ${last_name}\nRole: ${role}\nManager: ${manager}`));
+                                            start();
+                                        } else {
+                                            addEmployee();
+                                        };
+                                    });
+
+                            });
+                    };
                 });
         });
     });
 };
 
-//
 const addRole = () => {
     // Query db to return department list and then push to array
     let query = `SELECT * FROM department`;
@@ -521,7 +526,6 @@ const updateEmployeeRole = () => {
         for (let i = 0; i < res.length; i++) {
             employeeList.push(`${res[i].first_name} ${res[i].last_name}`)
         };
-        console.log(`Employees: ${employeeList}`);
 
         // Query role table, create array of roles to display to user. Get role id from mapping to role
         let query2 = `Select * FROM role`;
@@ -534,7 +538,6 @@ const updateEmployeeRole = () => {
                 roleList.push(`${res[i].title}`);
                 roleIdList.push(res[i].id);
             };
-            console.log(`Roles: ${roleList}`);
 
             inquirer
                 .prompt([{
