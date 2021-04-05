@@ -18,7 +18,7 @@ Employee Tracker is a CMS interface that makes it easy for non-developers to vie
 
 ## Repo Location
 #### The repo is located here: 
-* [link to repo - https://github.com/brandyquinlan/Employee_Tracker](https://github.com/brandyquinlan/Employee_Tracker)
+* [link to repo - https://github.com/brandyquinlan/Employee-Tracker](https://github.com/brandyquinlan/Employee-Tracker)
 
 ## Installation Instructions
   Run the command "npm i" to install dependencies
@@ -77,7 +77,9 @@ chalk
 Please contact me with questions:
 ```
 Brandy Quinlan
-Email: brandyquinlan@gmail.com
-Github link: brandyquinlan
+<br>
+Email: <brandyquinlan@gmail.com>
+<br>
+Github: [https://github.com/brandyquinlan/](https://github.com/brandyquinlan/)
 ```
 
