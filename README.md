@@ -1,4 +1,4 @@
-# Unit 12 MySQL: Employee Tracker
+# Employee Tracker
 
 ## Table of Contents
 
@@ -18,7 +18,7 @@ Employee Tracker is a CMS interface that makes it easy for non-developers to vie
 
 ## Repo Location
 #### The repo is located here: 
-* [link to repo - https://github.com/brandyquinlan/HW12_Employee_Tracker](https://github.com/brandyquinlan/HW12_Employee_Tracker)
+* [link to repo - https://github.com/brandyquinlan/Employee_Tracker](https://github.com/brandyquinlan/Employee_Tracker)
 
 ## Installation Instructions
   Run the command "npm i" to install dependencies
