@@ -18,7 +18,7 @@ Employee Tracker is a CMS interface that makes it easy for non-developers to vie
 
 ## Repo Location
 #### The repo is located here: 
-* [link to repo](https://github.com/HW12_Employee_Tracker/)
+* [link to repo](https://github.com/Employee_Tracker/)
 
 ## Installation Instructions
   Run the command "npm i" to install dependencies
